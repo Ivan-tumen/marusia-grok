@@ -1,5 +1,5 @@
 import os
-from flask import Flask, request
+from flask import Flask, request, jsonify
 import requests
 
 app = Flask(__name__)
@@ -9,7 +9,7 @@ API_URL = "https://proxyapi.ru"
 
 @app.route("/marusia", methods=["POST"])
 def marusia_skill():
-    # Собираем текст из любого возможного формата запроса от Aimylogic
+    # Собираем текст из любого формата запроса
     user_text = ""
     if request.is_json:
         data = request.json or {}
@@ -19,35 +19,42 @@ def marusia_skill():
     
     user_text = (user_text or "").strip()
     
-    # Быстрый ответ на пустой пинг или приветствие для проверки связи
+    # Ответ на приветствие или пустой пинг
     if not user_text or user_text.lower() in ["привет", "hello"]:
-        return "Привет! Твой умный ИИ Грок на связи. Задавай любой вопрос."
+        ai_text = "Привет! Твой умный ИИ Грок на связи. Задавай любой вопрос."
+    elif not PROXY_API_KEY:
+        ai_text = "Ошибка: Не задан ключ PROXY_API_KEY в настройках сервера Render."
+    else:
+        headers = {
+            "Authorization": f"Bearer {PROXY_API_KEY}",
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "model": "grok-beta",
+            "messages": [
+                {"role": "system", "content": "Ты краткий голосовой ассистент. Отвечай емко, без спецсимволов и разметки."},
+                {"role": "user", "content": user_text}
+            ],
+            "max_tokens": 300
+        }
+        try:
+            response = requests.post(API_URL, json=payload, headers=headers, timeout=20)
+            if response.status_code == 200:
+                ai_text = response.json()["choices"]["message"]["content"]
+            else:
+                ai_text = f"Ошибка ProxyAPI: Код {response.status_code}. Проверь баланс."
+        except Exception as e:
+            ai_text = f"Ошибка соединения с нейросетью: {str(e)}"
 
-    if not PROXY_API_KEY:
-        return "Ошибка: Не задан ключ PROXY_API_KEY в настройках сервера Render."
-
-    headers = {
-        "Authorization": f"Bearer {PROXY_API_KEY}",
-        "Content-Type": "application/json"
-    }
-    
-    payload = {
-        "model": "grok-beta",
-        "messages": [
-            {"role": "system", "content": "Ты краткий голосовой ассистент. Отвечай емко, без спецсимволов и разметки."},
-            {"role": "user", "content": user_text}
-        ],
-        "max_tokens": 300
-    }
-    
-    try:
-        response = requests.post(API_URL, json=payload, headers=headers, timeout=20)
-        if response.status_code == 200:
-            return response.json()["choices"]["message"]["content"]
-        else:
-            return f"Ошибка ProxyAPI: Код {response.status_code}. Проверь баланс."
-    except Exception as e:
-        return f"Ошибка соединения с нейросетью: {str(e)}"
+    # Возвращаем строгий JSON-ответ, который устроит любую систему
+    return jsonify({
+        "response": {
+            "text": ai_text,
+            "end_session": False
+        },
+        "text": ai_text,
+        "version": "1.0"
+    })
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
