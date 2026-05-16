@@ -30,7 +30,7 @@ def marusia_skill():
             "Content-Type": "application/json"
         }
         payload = {
-            "model": "grok-beta",
+            "model": "grok-2-1212",
             "messages": [
                 {"role": "system", "content": "Ты краткий голосовой ассистент. Отвечай емко, без спецсимволов и разметки."},
                 {"role": "user", "content": user_text}
