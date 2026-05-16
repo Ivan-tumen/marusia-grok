@@ -5,7 +5,7 @@ import requests
 app = Flask(__name__)
 
 PROXY_API_KEY = os.environ.get("PROXY_API_KEY")
-API_URL = "https://proxyapi.ru"
+API_URL = "https://api.proxyapi.ru"
 
 @app.route("/marusia", methods=["POST"])
 def marusia_skill():
