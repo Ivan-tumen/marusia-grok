@@ -61,7 +61,7 @@ def marusia_skill():
 
 
         payload = {
-            "model": "gpt-4o-mini",  # Пока проверяем на супер-стабильной и дешевой модели
+            "model": "x-ai/grok-2-1212",  # Пока проверяем на супер-стабильной и дешевой модели
             "messages": messages_history,
             "max_tokens": 400
         }
